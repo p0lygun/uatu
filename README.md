@@ -35,7 +35,7 @@ It is important to note that the test data is not from the same probability dist
 includes specific attack types not in the training data. This makes the task more realistic. Some intrusion experts
 believe that most novel attacks are variants of known attacks and the "signature" of known attacks can be sufficient to
 catch novel variants. The datasets contain a total of 24 [training attack types](training_attack_types), with an
-additional 14 types in the test data only.    
+additional 14 types in the test data only.
 
 #### DERIVED FEATURES
 
@@ -65,11 +65,11 @@ Stolfo et al. used domain knowledge to add features that look for suspicious beh
 number of failed login attempts. These features are called ``content'' features.
 
 A complete listing of the set of features defined for the connection records is given in the three tables below. The
-data schema of the contest dataset is available in [machine-readable form](kddcup.names) .    
+data schema of the contest dataset is available in [machine-readable form](kddcup.names) .
 
 |                |                                                              |            |
 |----------------|--------------------------------------------------------------|------------|
-| _feature name_ | _description _                                               | _type_     |
+| _feature name_ | _description_                                                | _type_     |
 | duration       | length (number of seconds) of the connection                 | continuous |
 | protocol_type  | type of the protocol, e.g. tcp, udp, etc.                    | discrete   |
 | service        | network service on the destination, e.g., http, telnet, etc. | discrete   |
@@ -78,15 +78,13 @@ data schema of the contest dataset is available in [machine-readable form](kddcu
 | flag           | normal or error status of the connection                     | discrete   |
 | land           | 1 if connection is from/to the same host/port; 0 otherwise   | discrete   |
 | wrong_fragment | number of ``wrong'' fragments                                | continuous |
-| urgent         | number of urgent packets                                     | continuous |   
+| urgent         | number of urgent packets                                     | continuous |  
 
 Table 1: Basic features of individual TCP connections.
 
- 
-
 |                      |                                                         |            |
 |----------------------|---------------------------------------------------------|------------|
-| _feature name_       | _description _                                          | _type_     |
+| _feature name_       | _description_                                           | _type_     |
 | hot                  | number of ``hot'' indicators                            | continuous |
 | num\_failed\_logins  | number of failed login attempts                         | continuous |
 | logged_in            | 1 if successfully logged in; 0 otherwise                | discrete   |
@@ -99,17 +97,15 @@ Table 1: Basic features of individual TCP connections.
 | num\_access\_files   | number of operations on access control files            | continuous |
 | num\_outbound\_cmds  | number of outbound commands in an ftp session           | continuous |
 | is\_hot\_login       | 1 if the login belongs to the ``hot'' list; 0 otherwise | discrete   |
-| is\_guest\_login     | 1 if the login is a ``guest''login; 0 otherwise         | discrete   |   
+| is\_guest\_login     | 1 if the login is a ``guest''login; 0 otherwise         | discrete   |  
 
 Table 2: Content features within a connection suggested by domain knowledge.
 
- 
-
 |                      |                                                                                             |            |
 |----------------------|---------------------------------------------------------------------------------------------|------------|
-| _feature name_       | _description _                                                                              | _type_     |
+| _feature name_       | _description_                                                                               | _type_     |
 | count                | number of connections to the same host as the current connection in the past two seconds    | continuous |
-|                      | _Note: The following  features refer to these same-host connections._                       |            |
+|                      | _Note: The following features refer to these same-host connections._                        |            |
 | serror_rate          | % of connections that have ``SYN'' errors                                                   | continuous |
 | rerror_rate          | % of connections that have ``REJ'' errors                                                   | continuous |
 | same\_srv\_rate      | % of connections to the same service                                                        | continuous |
@@ -118,4 +114,4 @@ Table 2: Content features within a connection suggested by domain knowledge.
 |                      | _Note: The following features refer to these same-service connections._                     |            |
 | srv\_serror\_rate    | % of connections that have ``SYN'' errors                                                   | continuous |
 | srv\_rerror\_rate    | % of connections that have ``REJ'' errors                                                   | continuous |
-| srv\_diff\_host_rate | % of connections to different hosts                                                         | continuous |   
+| srv\_diff\_host_rate | % of connections to different hosts                                                         | continuous |  
