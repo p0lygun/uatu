@@ -1,161 +1,121 @@
-# uatu
-A ML model trained on KDDCUP’99 data set to detect network intrusion
+KDD-CUP-99 Task Description
 
+#### INTRUSION DETECTOR LEARNING
 
-## Table of Content
-  * [Directory Tree](#directory-tree)
-  * [BUSINESS CONTEXT](#business-context)
-  * [BUSINESS PROBLEM](#business-problem)
-  * [DATA AVAILABILITY](#data-availability)
-  * [ATTACK CLASS](#attack-class)
-  * [How to Use](#how-to-use)
+Software to detect network intrusions protects a computer network from unauthorized users, including perhaps insiders.
+The intrusion detector learning task is to build a predictive model (i.e. a classifier) capable of distinguishing
+between \`\`bad'' connections, called intrusions or attacks, and \`\`good'' normal connections.
 
-### Directory Tree
+The 1998 DARPA Intrusion Detection Evaluation Program was prepared and managed by MIT Lincoln Labs. The objective was to
+survey and evaluate research in intrusion detection. A standard set of data to be audited, which includes a wide variety
+of intrusions simulated in a military network environment, was provided. The 1999 KDD intrusion detection contest uses a
+version of this dataset.
 
-```
-├── NSL_Dataset
-│   ├── Test.txt
-│   ├── Train.txt
-├── results
-│   ├── 2020-06-15 15_28_16-Window.png
-│   ├── 2020-06-15 15_29_02-Window.png
-│   ├── 2020-06-15 15_30_02-Window.png
-│   ├── 2020-06-15 15_31_30-Window.png
-│   ├── 2020-06-15 15_31_58-Window.png
-│   ├── 2020-06-15 15_32_25-Window.png
-├── static
-│   ├── style.css
-├── templates
-│   ├── index.html
-├── app.py
-├── corrm.csv
-├── Dockerfile
-├── model.pkl
-├── Network Intrusion Detection System.ipynb
-├── num_summary.csv
-├── pandas_profiling.html
-├── requirements.txt
-├── LICENSE
-├── Procfile
-├── README.md
-```
+Lincoln Labs set up an environment to acquire nine weeks of raw TCP dump data for a local-area network (LAN) simulating
+a typical U.S. Air Force LAN. They operated the LAN as if it were a true Air Force environment, but peppered it with
+multiple attacks.
 
-### BUSINESS CONTEXT:
+The raw training data was about four gigabytes of compressed binary TCP dump data from seven weeks of network traffic.
+This was processed into about five million connection records. Similarly, the two weeks of test data yielded around two
+million connection records.
 
-With the enormous growth of computer networks usage and the huge increase in the number of applications running on top of it, network secrity is becoming increasingly more important. All the computer systems suffer from security vulnerabilities which are both technically difficult and economically costly to be solved by the manufacturers. Therefore, the role of Intrusion Detection Systems (IDSs), as special purpose devices to detect anomalies and attacks in the network, is becoming more important. 
+A connection is a sequence of TCP packets starting and ending at some well defined times, between which data flows to
+and from a source IP address to a target IP address under some well defined protocol. Each connection is labeled as
+either normal, or as an attack, with exactly one specific attack type. Each connection record consists of about 100
+bytes.
 
-The research in the intrusion detection field has been mostly focused on a nomaly-based and misuse-based detection techniques for a long time. While misuse-based detction is generally favoured in commercial products due to its predictability and high accuracy, in academic research anomally detection is typically conceived as a more powerful method due to its theoretical potential for addressing novel attacks.
+Attacks fall into four main categories:
 
-Conducting a through analysis of the recent research trend is anomaly detection, one will encounter several machine learning methods reported to have a very high detection rate of 98% while keeping the false alarm rate at 1%. However, when we look at the state of art IDS solutions and comercial tools, there is no evidence of using anomaly detection approaches, and practitioners still think that it is an immature technology. To find the reason of this contrast, lots of research was done in anomaly detection and considered various aspects such as learning, and detection approaches, training data sets, testing data sets, and evaluation methods.
+* DOS: denial-of-service, e.g. syn flood;
+* R2L: unauthorized access from a remote machine, e.g. guessing password;
+* U2R:unauthorized access to local superuser (root) privileges, e.g., various ``buffer overflow'' attacks;
+* probing: surveillance and other probing, e.g., port scanning.
 
-### BUSINESS PROBLEM:
+It is important to note that the test data is not from the same probability distribution as the training data, and it
+includes specific attack types not in the training data. This makes the task more realistic. Some intrusion experts
+believe that most novel attacks are variants of known attacks and the "signature" of known attacks can be sufficient to
+catch novel variants. The datasets contain a total of 24 [training attack types](training_attack_types), with an
+additional 14 types in the test data only.    
 
-The task is to build network intrusion detection system to detect anamolies and attacks in the network. There are two problems.  
+#### DERIVED FEATURES
 
-1) Binomial Classification: Activity is normal or attack 
+Stolfo et al. defined higher-level features that help in distinguishing normal connections from attacks. There are
+several categories of derived features.
 
-2) Multinomial classification: Activity is normal or DOS or PROBE or R2L or U2R 
+The ``same host'' features examine only the connections in the past two seconds that have the same destination host as
+the current connection, and calculate statistics related to protocol behavior, service, etc.
 
-### DATA AVAILABILITY: 
+The similar ``same service'' features examine only the connections in the past two seconds that have the same service as
+the current connection.
 
-This data is KDDCUP’99 data set, which is widely used as one of the few publicly available data sets for network-based anomaly detection systems.  
- 
-For more about data: http://www.unb.ca/cic/datasets/nsl.html 
+"Same host" and "same service" features are together called time-based traffic features of the connection records.
 
-#### LIST OF COLUMNS FOR THE DATA SET:
+Some probing attacks scan the hosts (or ports) using a much larger time interval than two seconds, for example once per
+minute. Therefore, connection records were also sorted by destination host, and features were constructed using a window
+of 100 connections to the same host instead of a time window. This yields a set of so-called host-based traffic
+features.
 
-["duration","protocol_type","service","flag","src_bytes","dst_bytes","land", "wrong_fragment","urgent","hot","num_failed_logins","logged_in", "num_compromised","root_shell","su_attempted","num_root","num_file_creations", "num_shells","num_access_files","num_outbound_cmds","is_host_login", "is_guest_login","count","srv_count","serror_rate", "srv_serror_rate", "rerror_rate","srv_rerror_rate","same_srv_rate", "diff_srv_rate", 
-"srv_diff_host_rate","dst_host_count","dst_host_srv_count","dst_host_same_srv_rate", "dst_host_diff_srv_rate","dst_host_same_src_port_rate", "dst_host_srv_diff_host_rate","dst_host_serror_rate","dst_host_srv_serror_rate", "dst_host_rerror_rate","dst_host_srv_rerror_rate","attack", "last_flag"]
+Unlike most of the DOS and probing attacks, there appear to be no sequential patterns that are frequent in records of
+R2L and U2R attacks. This is because the DOS and probing attacks involve many connections to some host(s) in a very
+short period of time, but the R2L and U2R attacks are embedded in the data portions  
+of packets, and normally involve only a single connection.
 
-#### BASIC FEATURES OF EACH NETWORK CONNECTION VECTOR:
+Useful algorithms for mining the unstructured data portions of packets automatically are an open research question.
+Stolfo et al. used domain knowledge to add features that look for suspicious behavior in the data portions, such as the
+number of failed login attempts. These features are called ``content'' features.
 
-1) <b>Duration:</b>  Length of time duration of the connection  
-2) <b>Protocol_type:</b> Protocol used in the connection  
-3) <b>Service:</b> Destination network service used  
-4) <b>Flag:</b> Status of the connection – Normal or Error 
-5) <b>Src_bytes:</b> Number of data bytes transferred from source to destination in single connection  
-6) <b>Dst_bytes:</b> Number of data bytes transferred from destination to source in single connection  
-7) <b>Land:</b> if source and destination IP addresses and port numbers are equal then, this variable takes value 1 else 0  
-8) <b>Wrong_fragment:</b> Total number of wrong fragments in this connection  
-9) <b>Urgent:</b> Number of urgent packets in this connection. Urgent packets are packets with the urgent bit activated
+A complete listing of the set of features defined for the connection records is given in the three tables below. The
+data schema of the contest dataset is available in [machine-readable form](kddcup.names) .    
 
-#### CONTENT RELATED FEATURES OF EACH NETWORK CONNECTION VECTOR:
+|                |                                                              |            |
+|----------------|--------------------------------------------------------------|------------|
+| _feature name_ | _description _                                               | _type_     |
+| duration       | length (number of seconds) of the connection                 | continuous |
+| protocol_type  | type of the protocol, e.g. tcp, udp, etc.                    | discrete   |
+| service        | network service on the destination, e.g., http, telnet, etc. | discrete   |
+| src_bytes      | number of data bytes from source to destination              | continuous |
+| dst_bytes      | number of data bytes from destination to source              | continuous |
+| flag           | normal or error status of the connection                     | discrete   |
+| land           | 1 if connection is from/to the same host/port; 0 otherwise   | discrete   |
+| wrong_fragment | number of ``wrong'' fragments                                | continuous |
+| urgent         | number of urgent packets                                     | continuous |   
 
-10) <b>Hot:</b> Number of "hot" indicators in the content such as: entering a system directory, creating programs and executing programs 
-11) <b>Num_failed _logins:</b> Count of failed login attempts  
-12) <b>Logged_in Login Status:</b> 1 if successfully logged in; 0 otherwise  
-13) <b>Num_compromised:</b> Number of "compromised" conditions  
-14) <b>Root_shell:</b> 1 if root shell is obtained; 0 otherwise  
-15) <b>Su_attempted:</b> 1 if "su root" command attempted or used; 0 otherwise  
-16) <b>Num_root:</b> Number of "root" accesses or number of operations performed as a root in the connection 
-17) <b>Num_file_creations:</b> Number of file creation operations in the connection  
-18) <b>Num_shells:</b> Number of shell prompts  
-19) <b>Num_access_files:</b> Number of operations on access control files  
-20) <b>Num_outbound_cmds:</b> Number of outbound commands in an ftp session  
-21) <b>Is_hot_login:</b> 1 if the login belongs to the "hot" list i.e., root or admin; else 0  
-22) <b>Is_guest_login:</b> 1 if the login is a "guest" login; 0 otherwise 
+Table 1: Basic features of individual TCP connections.
 
-#### TIME RELATED TRAFFIC FEATURES OF EACH NETWORK CONNECTION VECTOR:
+ 
 
-23) <b>Count:</b> Number of connections to the same destination host as the current connection in the past two seconds 
-24) <b>Srv_count:</b> Number of connections to the same service (port number) as the current connection in the past two seconds  
-25) <b>Serror_rate:</b> The percentage of connections that have activated the flag (4) s0, s1, s2 or s3, among the connections aggregated in count (23)  
-26) <b>Srv_serror_rate:</b> The percentage of connections that have activated the flag (4) s0, s1, s2 or s3, among the connections aggregated in srv_count (24)  
-27) <b>Rerror_rate:</b> The percentage of connections that have activated the flag (4) REJ, among the connections aggregated in count (23)  
-28) <b>Srv_rerror_rate:</b> The percentage of connections that have activated the flag (4) REJ, among the connections aggregated in srv_count (24)  
-29) <b>Same_srv_rate:</b> The percentage of connections that were to the same service, among the connections aggregated in count (23)  
-30) <b>Diff_srv_rate:</b> The percentage of connections that were to different services, among the connections aggregated in count (23)
-31) <b>_diff_host_ rate:</b> percentage of connections that were to different destination machines among the connections aggregated in srv_count (24) 
+|                      |                                                         |            |
+|----------------------|---------------------------------------------------------|------------|
+| _feature name_       | _description _                                          | _type_     |
+| hot                  | number of ``hot'' indicators                            | continuous |
+| num\_failed\_logins  | number of failed login attempts                         | continuous |
+| logged_in            | 1 if successfully logged in; 0 otherwise                | discrete   |
+| num_compromised      | number of ``compromised'' conditions                    | continuous |
+| root_shell           | 1 if root shell is obtained; 0 otherwise                | discrete   |
+| su_attempted         | 1 if ``su root'' command attempted; 0 otherwise         | discrete   |
+| num_root             | number of ``root'' accesses                             | continuous |
+| num\_file\_creations | number of file creation operations                      | continuous |
+| num_shells           | number of shell prompts                                 | continuous |
+| num\_access\_files   | number of operations on access control files            | continuous |
+| num\_outbound\_cmds  | number of outbound commands in an ftp session           | continuous |
+| is\_hot\_login       | 1 if the login belongs to the ``hot'' list; 0 otherwise | discrete   |
+| is\_guest\_login     | 1 if the login is a ``guest''login; 0 otherwise         | discrete   |   
 
-####  HOST BASED TRAFFIC FEATURES IN A NETWORK CONNECTION VECTOR:
+Table 2: Content features within a connection suggested by domain knowledge.
 
-32) <b>Dst_host_count:</b> Number of connections having the same destination host IP address  
-33) <b>Dst_host_srv_ count:</b> Number of connections having the same port number  
-34) <b>Dst_host_same _srv_rate:</b> The percentage of connections that were to the same service, among the connections aggregated in dst_host_count (32)  
-35) <b>Dst_host_diff_ srv_rate:</b> The percentage of connections that were to different services, among the connections aggregated in dst_host_count (32)  
-36) <b>Dst_host_same _src_port_rate:</b> The percentage of connections that were to the same source port, among the connections aggregated in dst_host_srv_c ount (33)  
-37) <b>Dst_host_srv_ diff_host_rate:</b> The percentage of connections that were to different destination machines, among the connections aggregated in dst_host_srv_count (33) 
-38) <b>Dst_host_serro r_rate:</b> The percentage of connections that have activated the flag (4) s0, s1, s2 or s3, among the connections aggregated in dst_host_count (32)  
-39) <b>Dst_host_srv_s error_rate:</b> The percent of connections that have activated the flag (4) s0, s1, s2 or s3, among the connections aggregated in dst_host_srv_c ount (33)  
-40) <b>Dst_host_rerro r_rate:</b> The percentage of connections that have activated the flag (4) REJ, among the connections aggregated in dst_host_count (32)  
-41) <b>Dst_host_srv_r error_rate:</b> The percentage of connections that have activated the flag (4) REJ, among the connections aggregated in dst_host_srv_c ount (33) 
+ 
 
-#### Type Features:
-
-<b>Nominal:</b>  Protocol_type(2), Service(3), Flag(4) 
- 
-<b>Binary:</b> Land(7), logged_in(12), root_shell(14), su_attempted(15), is_host_login(21),, is_guest_login(22) 
- 
-<b>Numeric:</b> Duration(1), src_bytes(5), dst_bytes(6), wrong_fragment(8), urgent(9), hot(10), num_failed_logins(11), num_compromised(13), num_root(16), num_file_creations(17), num_shells(18), num_access_files(19), num_outbound_cmds(20), count(23), srv_count(24), error_rate(25), srv_serror_rate(26), rerror_rate(27),srv_rerror_rate(28), same_srv_rate(29),diff_srv_rate(30), srv_diff_host_rate(31), dst_host_count(32), dst_host_srv_count(33), dst_host_same_srv_rate(34), dst_host_diff_srv_rate(35), dst_host_same_src_port_rate(36), dst_host_srv_diff_host_rate(37), dst_host_serror_rate(38), dst_host_srv_serror_rate(39), dst_host_rerror_rate(40), dst_host_srv_rerror_rate(41) 
-
-### Attack Class : Attack Type
-              
-1) DoS       : Back, Land, Neptune, Pod, Smurf,Teardrop,Apache2, Udpstorm, Processtable, Worm (10) 
-
-2) Probe     : Satan, Ipsweep, Nmap, Portsweep, Mscan, Saint  (6) 
-
-3) R2L       : Guess_Password, Ftp_write, Imap, Phf, Multihop, Warezmaster, Warezclient, Spy, Xlock, Xsnoop, Snmpguess, Snmpgetattack, Httptunnel, Sendmail, Named (16)
- 
-4) U2R       : Buffer_overflow, Loadmodule, Rootkit, Perl, Sqlattack, Xterm, Ps (7) 
-
-### ATTACK CLASS: 
-
-1. <b>DOS:</b> Denial of service is an attack category, which depletes the victim‟s resources thereby making it unable to handle legitimate requests – e.g. syn flooding. Relevant features: “source bytes” and “percentage of packets with errors”  
-2. <b>Probing:</b> Surveillance and other probing attack‟s objective is to gain information about the remote victim e.g. port scanning. Relevant features: “duration of connection” and “source bytes”  
-3. <b>U2R:</b> unauthorized access to local super user (root) privileges is an attack type, by which an attacker uses a normal account to login into a victim system and tries to gain root/administrator privileges by exploiting some vulnerability in the victim e.g. buffer overflow attacks. Relevant features: “number of file creations” and “number of shell prompts invoked,” 
-4. <b>R2L:</b> unauthorized access from a remote machine, the attacker intrudes into a remote machine and gains local access of the victim machine. E.g. password guessing Relevant features: Network level features – “duration of connection” and “service requested” and host level features - “number of failed login attempts” 
-
-### How to Use
-
-Just follow 3 simple steps :
-
-1. Go to project website link https://nids-api.herokuapp.com/ .<br>
-
-2. Fill the form as shown below :<br><br>
-
-![](/results/2020-06-15%2015_28_16-Window.png)<br>
-![](/results/2020-06-15%2015_29_02-Window.png)<br>
-
-3. Then Click on Predict and you get the predicted attack class .<br><br>
-
-![](/results/2020-06-15%2015_30_02-Window.png)<br>
+|                      |                                                                                             |            |
+|----------------------|---------------------------------------------------------------------------------------------|------------|
+| _feature name_       | _description _                                                                              | _type_     |
+| count                | number of connections to the same host as the current connection in the past two seconds    | continuous |
+|                      | _Note: The following  features refer to these same-host connections._                       |            |
+| serror_rate          | % of connections that have ``SYN'' errors                                                   | continuous |
+| rerror_rate          | % of connections that have ``REJ'' errors                                                   | continuous |
+| same\_srv\_rate      | % of connections to the same service                                                        | continuous |
+| diff\_srv\_rate      | % of connections to different services                                                      | continuous |
+| srv_count            | number of connections to the same service as the current connection in the past two seconds | continuous |
+|                      | _Note: The following features refer to these same-service connections._                     |            |
+| srv\_serror\_rate    | % of connections that have ``SYN'' errors                                                   | continuous |
+| srv\_rerror\_rate    | % of connections that have ``REJ'' errors                                                   | continuous |
+| srv\_diff\_host_rate | % of connections to different hosts                                                         | continuous |   
